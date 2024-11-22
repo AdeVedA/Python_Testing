@@ -71,6 +71,7 @@ def showSummary():
 
 @app.route("/book/<competition>/<club>")
 def book(competition, club):
+    """render a pager for a club to book for a specific future competition"""
     foundClub = next((c for c in clubs if c["name"] == club), None)
     foundCompetition = next((c for c in competitions if c["name"] == competition), None)
     current_date = datetime.now()
