@@ -115,6 +115,19 @@ def purchasePlaces():
         flash("Invalid club or competition.")
         return redirect(url_for("index"))
 
+    if placesRequired <= 0:
+        flash("booking 0 or less places is quite surprising, please book a significant number of places")
+        return render_template("welcome.html", club=club, competitions=competitions)
+    if placesRequired > 12:
+        flash("booking more than 12 places is not allowed")
+        return render_template("welcome.html", club=club, competitions=competitions)
+    if placesRequired > int(competition["numberOfPlaces"]):
+        flash("Not enough places available. Try to respect the number of places available.")
+        return render_template("welcome.html", club=club, competitions=competitions)
+    if placesRequired > club_points:
+        flash("Not enough club points available. Try to respect the limits of your available points for booking.")
+        return render_template("welcome.html", club=club, competitions=competitions)
+
     competition["numberOfPlaces"] = int(competition["numberOfPlaces"]) - placesRequired
     club["points"] = club_points - placesRequired
 
