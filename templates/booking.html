@@ -3,7 +3,10 @@
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>Booking for {{competition['name']}} || GÜDLFT</title>
+        <link rel="stylesheet" href={{ url_for('static',
+        filename='css/style.css' ) }}>
     </head>
+
     <body>
         <h1>
             booking "{{competition['name']}}" competition's places for the
@@ -24,9 +27,10 @@
                 name="competition"
                 value="{{competition['name']}}"
             />
-            <label for="places">How many places?</label
+            <label for="places">How many places ? </label
             ><input type="number" name="places" id="" />
             <button type="submit">Book</button>
         </form>
+        {% include 'points.html' %}
     </body>
 </html>

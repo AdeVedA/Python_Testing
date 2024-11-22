@@ -1,0 +1,66 @@
+body {
+    font-family: Arial, sans-serif;
+    background-color: #f8f9fa; /* light gray background */
+    color: #333; /* dark text for readability */
+    margin: 20px;
+}
+
+h1,
+h2 {
+    color: #555; /* gray for heading */
+    text-align: center;
+}
+
+div,
+form {
+    margin-top: 20px;
+    margin-bottom: 20px;
+    text-align: center;
+}
+
+/* Flash messages list */
+ul {
+    width: 80%;
+    margin: 10px auto;
+    padding: 10px;
+    list-style: none;
+    background-color: #e0e0e0;
+    border-radius: 5px;
+}
+ul li {
+    color: #555; /* soft text color for messages */
+}
+
+/* Styles for the table */
+table {
+    min-width: 20%;
+    margin: 20px auto;
+    border-collapse: collapse;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* soft shadow */
+    background-color: #fff;
+}
+/* Header row */
+thead th {
+    background-color: #e0e0e0; /* Light gray for headers */
+    color: #333; /* dark text */
+    font-weight: bold;
+    text-transform: uppercase; /* make headers stand out */
+    padding: 12px;
+    border-bottom: 2px solid #ccc; /* separator */
+}
+/* Table rows */
+tbody tr {
+    transition: background-color 0.3s ease; /* hover effect */
+}
+tbody tr:nth-child(even) {
+    background-color: #eaeaea; /* Light gray for alt rows */
+}
+tbody tr:hover {
+    background-color: #d1d1d1; /* lighter gray on hover */
+}
+/* Table cells */
+td {
+    padding: 12px;
+    border-bottom: 1px solid #ddd; /* separators */
+    text-align: left; /* Align text to the left */
+}

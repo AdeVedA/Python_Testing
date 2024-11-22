@@ -154,9 +154,33 @@ def purchasePlaces():
     return render_template("welcome.html", club=club, competitions=competitions)
 
 
-# TODO: Add route for points display
+@app.route("/points")
+def points_display():
+    """
+    Display the points for all clubs in a tabular format.
+    Uses loadClubs to ensure clubs data is loaded freshly and handles errors.
+    """
+    try:
+        # Charger les clubs avec gestion des erreurs
+        refreshed_clubs = loadClubs()  # Rafraîchit les données des clubs depuis le fichier
+        if not refreshed_clubs:
+            flash("No club data available to display points.")
+            return redirect(url_for("index"))  # Rediriger vers l'accueil en cas d'erreur
+
+        # Calcul et préparation des données pour le tableau
+        clubs_with_points = [{"name": club["name"], "points": club.get("points", 0)} for club in refreshed_clubs]
+
+        # Rendre le template pour afficher les points
+        return render_template("points.html", clubs=clubs_with_points)
+
+    except Exception as e:
+        # Gestion d'erreurs imprévues
+        print(f"Unexpected error in points_display: {e}")
+        flash("An error occurred while displaying points.")
+        return redirect(url_for("index"))
 
 
 @app.route("/logout")
 def logout():
+    """log out and get back to index page"""
     return redirect(url_for("index"))
