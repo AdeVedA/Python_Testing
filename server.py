@@ -1,59 +1,129 @@
 import json
-from flask import Flask,render_template,request,redirect,flash,url_for
+
+from flask import Flask, flash, redirect, render_template, request, url_for
 
 
 def loadClubs():
-    with open('clubs.json') as c:
-         listOfClubs = json.load(c)['clubs']
-         return listOfClubs
+    """get the list of clubs from the JSON clubs file
+    Returns:
+        listOfClubs (list) or empty list
+    """
+    try:
+        with open("clubs.json", "r") as c:
+            listOfClubs = json.load(c)["clubs"]  # Chargement du contenu JSON
+            return listOfClubs
+    except FileNotFoundError:
+        flash("Error: clubs.json file not found.")
+        return []  # Retourner une liste vide pour éviter les plantages
+    except json.JSONDecodeError:
+        flash("Error: Failed to decode clubs.json.")
+        return []
 
 
 def loadCompetitions():
-    with open('competitions.json') as comps:
-         listOfCompetitions = json.load(comps)['competitions']
-         return listOfCompetitions
+    """get the list of competitions from a JSON competitions file
+    Returns:
+        listOfCompetitions (list) or empty list
+    """
+    try:
+        with open("competitions.json", "r") as comps:
+            listOfCompetitions = json.load(comps)["competitions"]
+            return listOfCompetitions
+    except FileNotFoundError:
+        flash("Error: competitions.json file not found.")
+        return []
+    except json.JSONDecodeError:
+        flash("Error: Failed to decode competitions.json.")
+        return []
+
+
+def save_data_to_json(file_path, data):
+    """Save updated data to a JSON file.
+    Args:
+        file_path (str): Path to the JSON file.
+        data (dict): Data to save.
+    """
+    try:
+        with open(file_path, "w") as file:
+            json.dump(data, file, indent=4)
+    except Exception as e:
+        print(f"Error saving data to {file_path}: {e}")
 
 
 app = Flask(__name__)
-app.secret_key = 'something_special'
+app.secret_key = "something_special"
 
 competitions = loadCompetitions()
 clubs = loadClubs()
 
-@app.route('/')
+
+@app.route("/")
 def index():
-    return render_template('index.html')
+    return render_template("index.html")
 
-@app.route('/showSummary',methods=['POST'])
+
+@app.route("/showSummary", methods=["POST"])
 def showSummary():
-    club = [club for club in clubs if club['email'] == request.form['email']][0]
-    return render_template('welcome.html',club=club,competitions=competitions)
+    club = [club for club in clubs if club["email"] == request.form["email"]][0]
+    return render_template("welcome.html", club=club, competitions=competitions)
 
 
-@app.route('/book/<competition>/<club>')
-def book(competition,club):
-    foundClub = [c for c in clubs if c['name'] == club][0]
-    foundCompetition = [c for c in competitions if c['name'] == competition][0]
+@app.route("/book/<competition>/<club>")
+def book(competition, club):
+    foundClub = [c for c in clubs if c["name"] == club][0]
+    foundCompetition = [c for c in competitions if c["name"] == competition][0]
     if foundClub and foundCompetition:
-        return render_template('booking.html',club=foundClub,competition=foundCompetition)
+        return render_template("booking.html", club=foundClub, competition=foundCompetition)
     else:
         flash("Something went wrong-please try again")
-        return render_template('welcome.html', club=club, competitions=competitions)
+        return render_template("welcome.html", club=club, competitions=competitions)
 
 
-@app.route('/purchasePlaces',methods=['POST'])
+@app.route("/purchasePlaces", methods=["POST"])
 def purchasePlaces():
-    competition = [c for c in competitions if c['name'] == request.form['competition']][0]
-    club = [c for c in clubs if c['name'] == request.form['club']][0]
-    placesRequired = int(request.form['places'])
-    competition['numberOfPlaces'] = int(competition['numberOfPlaces'])-placesRequired
-    flash('Great-booking complete!')
-    return render_template('welcome.html', club=club, competitions=competitions)
+    """permits places'booking for a competition"""
+    competition_name = request.form.get("competition")
+    club_name = request.form.get("club")
+    placesRequired = request.form.get("places")
+
+    if not competition_name or not club_name or not placesRequired:
+        flash("Missing data for booking.")
+        return redirect(url_for("index"))
+
+    try:
+        placesRequired = int(placesRequired)
+    except ValueError:
+        flash("Invalid number of places.")
+        return redirect(url_for("index"))
+
+    # utilisation de next() pour ne trouver de manière efficiente qu'un élément,
+    # et gérer le cas d'erreur où l'élément n'est pas trouvé (retourne "None")
+    competition = next((c for c in competitions if c["name"] == competition_name), None)
+    club = next((c for c in clubs if c["name"] == club_name), None)
+    club_points = int(club["points"])
+
+    if not competition or not club:
+        flash("Invalid club or competition.")
+        return redirect(url_for("index"))
+
+    competition["numberOfPlaces"] = int(competition["numberOfPlaces"]) - placesRequired
+    club["points"] = club_points - placesRequired
+
+    # Save updated data to JSON files
+    try:
+        save_data_to_json("competitions.json", {"competitions": competitions})
+        save_data_to_json("clubs.json", {"clubs": clubs})
+        flash("Great, booking complete!")
+    except Exception as e:
+        flash("An error occurred while saving data. Please try again.")
+        print(f"Error: {e}")
+
+    return render_template("welcome.html", club=club, competitions=competitions)
 
 
 # TODO: Add route for points display
 
 
-@app.route('/logout')
+@app.route("/logout")
 def logout():
-    return redirect(url_for('index'))
+    return redirect(url_for("index"))
