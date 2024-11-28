@@ -15,7 +15,7 @@ def loadClubs():
             return listOfClubs
     except FileNotFoundError:
         flash("Error: clubs.json file not found.")
-        return []  # Retourner une liste vide pour éviter les plantages
+        return []
     except json.JSONDecodeError:
         flash("Error: Failed to decode clubs.json.")
         return []
@@ -64,18 +64,32 @@ def index():
     return render_template("index.html")
 
 
-@app.route("/showSummary", methods=["POST"])
+@app.route("/showSummary", methods=["GET", "POST"])
 def showSummary():
-    """renders welcome page with competitions' datas list and logged-in club's points"""
-    email = request.form.get("email")
-    if not email:
-        flash("Email is required.")
-        return redirect(url_for("index"))
+    """renders welcome page with competitions' datas list and logged-in club's points
+    we use "GET" when redirecting to this page to keep 'club' reference for proper rendering"""
+    if request.method == "POST":
+        email = request.form.get("email")
+        if not email:
+            flash("Email is required.")
+            return redirect(url_for("index"))
 
-    club = next((club for club in clubs if club["email"] == email), None)  # Trouver le club correspondant
-    if not club:
-        flash("Club not found.")
-        return redirect(url_for("index"))
+        # Trouver le club correspondant à l'email
+        club = next((club for club in clubs if club["email"] == email), None)
+        if not club:
+            flash("Club not found.")
+            return redirect(url_for("index"))
+    elif request.method == "GET":
+        club_name = request.args.get("club")
+        if not club_name:
+            flash("Club information is missing.")
+            return redirect(url_for("index"))
+
+        # Trouver le club correspondant au nom passé dans les arguments GET
+        club = next((club for club in clubs if club["name"] == club_name), None)
+        if not club:
+            flash("Club not found.")
+            return redirect(url_for("index"))
 
     return render_template("welcome.html", club=club, competitions=competitions)
 
@@ -85,16 +99,18 @@ def book(competition, club):
     """render a pager for a club to book for a specific future competition"""
     foundClub = next((c for c in clubs if c["name"] == club), None)
     foundCompetition = next((c for c in competitions if c["name"] == competition), None)
+
+    if not foundClub or not foundCompetition:
+        flash("Invalid club or competition.")
+        return redirect(url_for("index"))
+
     current_date = datetime.now()
     competition_date = datetime.strptime(foundCompetition["date"], "%Y-%m-%d %H:%M:%S")
 
     if competition_date < current_date:
         flash("trying to book places for a past competition is not allowed")
-        return render_template("welcome.html", club=club, competitions=competitions)
-
-    if not foundClub or not foundCompetition:
-        flash("Invalid club or competition.")
-        return redirect(url_for("index"))
+        # on passe le nom du club dans les paramètres de l'URL
+        return redirect(url_for("showSummary", club=club))
 
     return render_template("booking.html", club=foundClub, competition=foundCompetition, clubs=clubs)
 
@@ -120,11 +136,12 @@ def purchasePlaces():
     # et gérer le cas d'erreur où l'élément n'est pas trouvé (retourne "None")
     competition = next((c for c in competitions if c["name"] == competition_name), None)
     club = next((c for c in clubs if c["name"] == club_name), None)
-    club_points = int(club["points"])
 
     if not competition or not club:
         flash("Invalid club or competition.")
         return redirect(url_for("index"))
+
+    club_points = int(club["points"])
 
     if placesRequired <= 0:
         flash("booking 0 or less places is quite surprising, please book a significant number of places")
@@ -139,45 +156,35 @@ def purchasePlaces():
         flash("Not enough club points available. Try to respect the limits of your available points for booking.")
         return render_template("welcome.html", club=club, competitions=competitions)
 
-    competition["numberOfPlaces"] = int(competition["numberOfPlaces"]) - placesRequired
-    club["points"] = club_points - placesRequired
+    competition["numberOfPlaces"] = str(int(competition["numberOfPlaces"]) - placesRequired)
+    club["points"] = str(club_points - placesRequired)
 
     # Save updated data to JSON files
-    try:
-        save_data_to_json("competitions.json", {"competitions": competitions})
-        save_data_to_json("clubs.json", {"clubs": clubs})
-        flash("Great, booking complete!")
-    except Exception as e:
-        flash("An error occurred while saving data. Please try again.")
-        print(f"Error: {e}")
+    save_data_to_json("competitions.json", {"competitions": competitions})
+    save_data_to_json("clubs.json", {"clubs": clubs})
+    flash("Great, booking complete!")
 
     return render_template("welcome.html", club=club, competitions=competitions)
 
 
-@app.route("/points")
+@app.route("/points", methods=["GET"])
 def points_display():
     """
     Display the points for all clubs in a tabular format.
     Uses loadClubs to ensure clubs data is loaded freshly and handles errors.
     """
-    try:
-        # Charger les clubs avec gestion des erreurs
-        refreshed_clubs = loadClubs()  # Rafraîchit les données des clubs depuis le fichier
-        if not refreshed_clubs:
-            flash("No club data available to display points.")
-            return redirect(url_for("index"))  # Rediriger vers l'accueil en cas d'erreur
 
-        # Calcul et préparation des données pour le tableau
-        clubs_with_points = [{"name": club["name"], "points": club.get("points", 0)} for club in refreshed_clubs]
+    # Charger les clubs avec gestion des erreurs
+    refreshed_clubs = loadClubs()  # Rafraîchit les données des clubs depuis le fichier
+    if not refreshed_clubs:
+        flash("No club data available to display points.")
+        return redirect(url_for("index"))  # Rediriger vers l'accueil en cas d'erreur
 
-        # Rendre le template pour afficher les points
-        return render_template("points.html", clubs=clubs_with_points)
+    # Calcul et préparation des données pour le tableau
+    clubs_with_points = [{"name": club["name"], "points": club.get("points", 0)} for club in refreshed_clubs]
 
-    except Exception as e:
-        # Gestion d'erreurs imprévues
-        print(f"Unexpected error in points_display: {e}")
-        flash("An error occurred while displaying points.")
-        return redirect(url_for("index"))
+    # Rendre le template pour afficher les points
+    return render_template("points.html", clubs=clubs_with_points)
 
 
 @app.route("/logout")
