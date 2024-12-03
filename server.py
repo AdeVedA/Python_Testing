@@ -47,8 +47,10 @@ def save_data_to_json(file_path, data):
     try:
         with open(file_path, "w") as file:
             json.dump(data, file, indent=4)
-    except Exception as e:
-        print(f"Error saving data to {file_path}: {e}")
+    except (FileNotFoundError, PermissionError) as e:
+        flash(f"Error: Unable to write to '{file_path}'. {e}")
+    except TypeError as e:
+        flash(f"Error: Data contains non-serializable types. {e}")
 
 
 app = Flask(__name__)
@@ -191,3 +193,7 @@ def points_display():
 def logout():
     """log out and get back to index page"""
     return redirect(url_for("index"))
+
+
+if __name__ == "__main__":
+    app.run(host="127.0.0.1", port=5000)
