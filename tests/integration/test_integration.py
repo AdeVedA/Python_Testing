@@ -1,8 +1,34 @@
+import shutil
+
+import pytest
+
 from server import loadClubs, loadCompetitions
 
 
+@pytest.fixture
+def backup_json_files():
+    """
+    Fixture de pytest for saving/restoring JSON files,
+    keeping them unchanged by the integration test.
+    """
+    json_files = ["competitions.json", "clubs.json"]
+    backups = {}
+
+    # Sauvegarder les fichiers
+    for file in json_files:
+        backup_path = f"{file}_backup"
+        shutil.copy(file, backup_path)
+        backups[file] = backup_path
+
+    yield  # le test !
+
+    # Restaurer les fichiers
+    for file, backup_path in backups.items():
+        shutil.move(backup_path, file)
+
+
 # Tests d'Intégration
-def test_full_booking_flow(client):
+def test_full_booking_flow(client, backup_json_files):
     """
     Test the complete booking flow
     Args:

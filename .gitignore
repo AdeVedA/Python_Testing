@@ -2,9 +2,10 @@ bin
 include
 lib
 .Python
-tests/
 .envrc
+.vscode
 __pycache__
+.pytest*
 .venv
 pipfile*
 .json

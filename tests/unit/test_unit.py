@@ -113,19 +113,16 @@ def test_save_data_to_json_success(mocker, tmp_path):
 
 def test_save_data_to_json_error(mocker):
     # Mock `open` pour qu'il lève une exception
-    mock_open = mocker.patch("builtins.open", side_effect=IOError("Cannot write to file"))
+    mocker.patch("builtins.open", side_effect=FileNotFoundError("No such file or directory"))
 
     # Mock `print` pour capturer les messages d'erreur
-    mock_print = mocker.patch("builtins.print")
+    mock_flash = mocker.patch("server.flash")
 
     # Appeler la fonction avec un chemin invalide
     save_data_to_json("invalid/path/test.json", {"key": "value"})
 
-    # Vérifier que `open` a été appelé avec les bons arguments
-    mock_open.assert_called_once_with("invalid/path/test.json", "w")
-
-    # Vérifier que le message d'erreur a été affiché
-    mock_print.assert_called_once_with("Error saving data to invalid/path/test.json: Cannot write to file")
+    # Vérifier que `flash` a été appelé avec le bon message
+    mock_flash.assert_called_once_with("Error: Unable to write to 'invalid/path/test.json'. No such file or directory")
 
 
 # test de == index ==
